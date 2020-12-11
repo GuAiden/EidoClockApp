@@ -15,10 +15,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-
       - name: Run Tests
-        run: ./gradlew test
-
+        run: bash ./gradlew test
       - name: Build Project
-        run: ./gradlew assemble
+        run: bash ./gradlew assemble
 
