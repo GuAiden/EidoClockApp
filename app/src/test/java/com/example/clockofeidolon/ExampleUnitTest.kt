@@ -1,7 +1,7 @@
 package com.example.clockofeidolon
 
 import org.junit.Test
-
+import com.example.clockofeidolon.clock.Clock
 import org.junit.Assert.*
 
 /**
@@ -14,4 +14,5 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+
 }
