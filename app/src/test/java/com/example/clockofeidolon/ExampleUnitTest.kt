@@ -3,6 +3,7 @@ package com.example.clockofeidolon
 import org.junit.Test
 import com.example.clockofeidolon.clock.Clock
 import org.junit.Assert.*
+import kotlin.reflect.typeOf
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -14,5 +15,13 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+
+    @Test
+    fun test_clock() {
+        var clock = Clock()
+        var expiryTime = clock.getTimeUntilNextEvent()
+        assertTrue()
+    }
+
 
 }

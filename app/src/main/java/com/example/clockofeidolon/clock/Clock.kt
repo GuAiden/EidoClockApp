@@ -5,6 +5,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import java.time.*
+import kotlin.math.floor
 
 @Serializable
 data class ExpiryData(val expiryDate: Long)
@@ -62,7 +63,7 @@ class Clock {
         }
     }
 
-    fun getNextExpiryTime(): Long {
+    private fun getNextExpiryTime(): Long {
         syncTime()
         // If the current time is past the expiry time, update displayExpiryTime
         if (Instant.now().toEpochMilli() >= expiryTime) {
@@ -93,5 +94,28 @@ class Clock {
             return dayTime - nightTime
         }
         return dayTime
+    }
+
+    /**
+     * Formats the utc timestamp to next event as a
+     * hours:minutes:seconds string
+     */
+    fun utcToHMS(timestamp: Long): String {
+        val totalSeconds = timestamp / 1000
+        val totalMinutes = totalSeconds / 60;
+        val hours = formatTime((totalMinutes / 60).toDouble())
+        val minutes = formatTime((totalMinutes % 60).toDouble())
+        val seconds = formatTime((totalSeconds % 60).toDouble())
+        return "${hours}:${minutes}:${seconds}"
+    }
+
+    /**
+     * pads the time if its less than 0
+     */
+    private fun formatTime(num: Double): String {
+        if (num < 10) {
+            return "0${num.toInt()}"
+        }
+        return "${num.toInt()}"
     }
 }
