@@ -24,7 +24,7 @@ class Clock {
     }
 
     /**
-     * A function that syncs the expiry time by making
+     * Syncs the expiry time by making
      * a get request to firebase to update the time
      */
     private fun syncTime() {
@@ -48,7 +48,7 @@ class Clock {
             } else {
                 try {
                     val gson = GsonBuilder().create()
-                    val body = response?.body?.string()
+                    val body = response.body?.string()
                     val data = gson.fromJson(body, ExpiryData::class.java)
                     if (expiryTime != data.expiryDate) {
                         expiryTime = data.expiryDate
@@ -63,27 +63,29 @@ class Clock {
         }
     }
 
+    /**
+     * @return when the current plains cycle expires
+     */
     private fun getNextExpiryTime(): Long {
         syncTime()
         // If the current time is past the expiry time, update displayExpiryTime
-        if (Instant.now().toEpochMilli() >= expiryTime) {
-            displayExpiryTime = expiryTime + 150 * 60 * 1000
+        displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
+            expiryTime + 150 * 60 * 1000
         } else {
-            displayExpiryTime = expiryTime
+            expiryTime
         }
         return displayExpiryTime
     }
 
     /**
-     * Gets the time difference from the current time
-     * to the next day cycle instance
+     * @return time difference from the current time to the next day cycle instance
      */
     private fun getTimeUntilDay(): Long {
         return getNextExpiryTime() - Instant.now().toEpochMilli()
     }
 
     /**
-     * Gets the time til the next event cycle, i.e. day/dusk
+     * @return the time til the next event cycle, day/night
      */
     fun getTimeUntilNextEvent(): Long {
         var dayTime = getTimeUntilDay()
@@ -99,18 +101,20 @@ class Clock {
     /**
      * Formats the utc timestamp to next event as a
      * hours:minutes:seconds string
+     * @param timestamp given utc timestamp
+     * @return the formatted string representing the timestamp
      */
-    fun utcToHMS(timestamp: Long): String {
+    private fun utcToHMS(timestamp: Long): String {
         val totalSeconds = timestamp / 1000
         val totalMinutes = totalSeconds / 60;
-        val hours = formatTime((totalMinutes / 60).toDouble())
-        val minutes = formatTime((totalMinutes % 60).toDouble())
-        val seconds = formatTime((totalSeconds % 60).toDouble())
+        val hours = formatTime(floor((totalMinutes / 60).toDouble()))
+        val minutes = formatTime(floor((totalMinutes % 60).toDouble()))
+        val seconds = formatTime(floor((totalSeconds % 60).toDouble()))
         return "${hours}:${minutes}:${seconds}"
     }
 
     /**
-     * pads the time if its less than 0
+     * Pads the time if its less than 0
      */
     private fun formatTime(num: Double): String {
         if (num < 10) {
@@ -119,6 +123,9 @@ class Clock {
         return "${num.toInt()}"
     }
 
+    /**
+     * @return if its currently night
+     */
     fun isNight(): Boolean {
         if (!hasLoaded) return false
         var dayTime = getTimeUntilDay()
@@ -127,5 +134,13 @@ class Clock {
             return false
         }
         return true
+    }
+
+    /**
+     * @return when next event occurs as hours:minutes:seconds
+     */
+    fun getEventTime(): String {
+        var eventTime = getTimeUntilNextEvent()
+        return utcToHMS(eventTime)
     }
 }
