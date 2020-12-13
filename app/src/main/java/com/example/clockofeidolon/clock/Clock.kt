@@ -118,4 +118,14 @@ class Clock {
         }
         return "${num.toInt()}"
     }
+
+    fun isNight(): Boolean {
+        if (!hasLoaded) return true
+        var dayTime = getTimeUntilDay()
+        var nightTime = 50 * 60 * 1000
+        if (dayTime > nightTime) {
+            return true
+        }
+        return false
+    }
 }
