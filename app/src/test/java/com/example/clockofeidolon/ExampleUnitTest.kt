@@ -20,8 +20,13 @@ class ExampleUnitTest {
     fun test_clock() {
         var clock = Clock()
         var expiryTime = clock.getTimeUntilNextEvent()
-        assertTrue()
+        assertTrue(expiryTime is Long)
     }
 
-
+    @Test
+    fun test_sanity_clock() {
+        var clock = Clock()
+        var expiryTime = clock.getTimeUntilNextEvent()
+        assertTrue(expiryTime < (150*60*1000))
+    }
 }

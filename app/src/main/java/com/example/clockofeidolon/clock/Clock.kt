@@ -120,12 +120,12 @@ class Clock {
     }
 
     fun isNight(): Boolean {
-        if (!hasLoaded) return true
+        if (!hasLoaded) return false
         var dayTime = getTimeUntilDay()
         var nightTime = 50 * 60 * 1000
         if (dayTime > nightTime) {
-            return true
+            return false
         }
-        return false
+        return true
     }
 }
