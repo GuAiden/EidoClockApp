@@ -7,12 +7,13 @@ import androidx.lifecycle.ViewModel
 class ClockViewModel: ViewModel() {
 
     private val clock: Clock = Clock()
-    private val currentTime: ClockData() by lazy {
-        ClockData()
+    val currentTime: MutableLiveData<String> by lazy {
+        MutableLiveData<String>()
     }
 
-    fun getUsers(): LiveData<String> {
-        return loadTime()
+    fun getTime(): LiveData<String> {
+        currentTime.value = loadTime()
+        return currentTime
     }
 
     private fun loadTime(): String {
