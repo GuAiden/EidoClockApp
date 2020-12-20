@@ -1,8 +1,9 @@
 package com.example.clockofeidolon.clock
 import com.google.gson.GsonBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import okhttp3.*
 import java.time.*
 import kotlin.math.floor
@@ -19,9 +20,6 @@ class Clock {
     var hasLoaded = false
     var syncing = false
 
-    init {
-        syncTime()
-    }
 
     /**
      * Syncs the expiry time by making
@@ -66,28 +64,46 @@ class Clock {
     /**
      * @return when the current plains cycle expires
      */
-    private fun getNextExpiryTime(): Long {
-        syncTime()
-        // If the current time is past the expiry time, update displayExpiryTime
-        displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
-            expiryTime + 150 * 60 * 1000
-        } else {
-            expiryTime
+    private suspend fun getNextExpiryTime(): Long {
+
+        withContext(Dispatchers.IO) {
+            try {
+                syncTime()
+                delay(1_000)
+            } catch (cause: Throwable) {
+                throw Error("Unable to make get request", cause)
+            }
+
+            // If the current time is past the expiry time, update displayExpiryTime
+            displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
+                expiryTime + 150 * 60 * 1000
+            } else {
+                expiryTime
+            }
         }
+
         return displayExpiryTime
+//        syncTime()
+//        // If the current time is past the expiry time, update displayExpiryTime
+//        displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
+//            expiryTime + 150 * 60 * 1000
+//        } else {
+//            expiryTime
+//        }
+//        return displayExpiryTime
     }
 
     /**
      * @return time difference from the current time to the next day cycle instance
      */
-    private fun getTimeUntilDay(): Long {
+    private suspend fun getTimeUntilDay(): Long {
         return getNextExpiryTime() - Instant.now().toEpochMilli()
     }
 
     /**
      * @return the time til the next event cycle, day/night
      */
-    fun getTimeUntilNextEvent(): Long {
+    suspend fun getTimeUntilNextEvent(): Long {
         var dayTime = getTimeUntilDay()
         val nightTime = 50 * 60 * 1000
         // If the time left is greater than the night period
@@ -126,7 +142,7 @@ class Clock {
     /**
      * @return if its currently night
      */
-    fun isNight(): Boolean {
+    suspend fun isNight(): Boolean {
         if (!hasLoaded) return false
         var dayTime = getTimeUntilDay()
         var nightTime = 50 * 60 * 1000
@@ -139,7 +155,7 @@ class Clock {
     /**
      * @return when next event occurs as hours:minutes:seconds
      */
-    fun getEventTime(): String {
+    suspend fun getEventTime(): String {
         var eventTime = getTimeUntilNextEvent()
         return utcToHMS(eventTime)
     }
