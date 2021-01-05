@@ -17,3 +17,9 @@ mobile users to notify them/send alarms before certain game events.
 - [ ] Enable an alarm feature, where user can set for an alarm before a certain event
 - [ ] Develop a notification system
 
+#### Notes
+
+To drive the Clock UI, data model needs to hold the following elements:
+- Clock Object
+    - Data class that holds time information in game.
+-

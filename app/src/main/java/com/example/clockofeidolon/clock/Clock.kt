@@ -1,15 +1,18 @@
 package com.example.clockofeidolon.clock
-import com.google.gson.GsonBuilder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import android.util.Log
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import api.ExpiryData
+import api.TimeRetriever
+import api.WebService
+import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import okhttp3.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.time.*
 import kotlin.math.floor
-
-@Serializable
-data class ExpiryData(val expiryDate: Long)
 
 class Clock {
     private val client = OkHttpClient()
@@ -20,11 +23,48 @@ class Clock {
     var hasLoaded = false
     var syncing = false
 
+    private fun findTime() {
+        // TODO: Test network connection before making network call
+    }
 
-    /**
-     * Syncs the expiry time by making
-     * a get request to firebase to update the time
-     */
+//    private fun retrieveTime() {
+//        val mainActivityJob = Job()
+//        // TODO: Handle Exceptions
+//        val coroutineScope = CoroutineScope(mainActivityJob + Dispatchers.Main)
+//        coroutineScope.launch() {
+//            val expiryData = TimeRetriever().retrieveTime()
+//            expiryTime = expiryData.expiryDate
+//        }
+//    }
+
+    fun apiCallback(expiryData: ExpiryData?) {
+        if (expiryData == null) {
+            println("Api call failed")
+        } else {
+            this.expiryTime = expiryData.expiryDate
+            println(expiryData.expiryDate)
+        }
+    }
+
+    private fun retrieveTime() {
+//        val callback = object : Callback<ExpiryData> {
+//            override fun onFailure(call: Call<ExpiryData>?, t: Throwable?) {
+//                Log.e("MainActivity", "Problem calling firebase")
+//            }
+//
+//            override fun onResponse(call: Call<ExpiryData>?, response:Response<ExpiryData>?) {
+//                response?.isSuccessful.let {
+//                    val fetchedTime = ExpiryData(response?.body()?.expiryDate ?: 0)
+//                    println(fetchedTime)
+//                    expiryTime = fetchedTime.expiryDate
+//                    println(expiryTime)
+//                    callback(fetchedTime)
+//                }
+//            }
+//        }
+        TimeRetriever().retrieveTime(::apiCallback)
+    }
+
     private fun syncTime() {
         //
         if (syncing) return
@@ -35,75 +75,37 @@ class Clock {
             lastSync = currTime.toEpochMilli()
 
             // Make get request
-            val request = Request.Builder()
-                .url("https://us-central1-eidoclock.cloudfunctions.net/getTime")
-                .build()
-            val response = client.newCall(request).execute()
-
-            // Evaluate response, deserialize payload and update expiry time.
-            if (response.body == null) {
-                println("Failed Api call")
-            } else {
-                try {
-                    val gson = GsonBuilder().create()
-                    val body = response.body?.string()
-                    val data = gson.fromJson(body, ExpiryData::class.java)
-                    if (expiryTime != data.expiryDate) {
-                        expiryTime = data.expiryDate
-                        hasLoaded = true
-                    }
-                    syncing = false
-                } catch (error: Exception) {
-                    println("An error has occurred in deserialization")
-                    println(error.stackTraceToString())
-                }
-            }
+            val lastExpiryTime = expiryTime
+            retrieveTime()
+            syncing = false
         }
     }
-
     /**
      * @return when the current plains cycle expires
      */
-    private suspend fun getNextExpiryTime(): Long {
-
-        withContext(Dispatchers.IO) {
-            try {
-                syncTime()
-                delay(1_000)
-            } catch (cause: Throwable) {
-                throw Error("Unable to make get request", cause)
-            }
-
+    private fun getNextExpiryTime(): Long {
             // If the current time is past the expiry time, update displayExpiryTime
-            displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
-                expiryTime + 150 * 60 * 1000
-            } else {
-                expiryTime
-            }
+        syncTime()
+        displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
+            expiryTime + 150 * 60 * 1000
+        } else {
+            expiryTime
         }
-
         return displayExpiryTime
-//        syncTime()
-//        // If the current time is past the expiry time, update displayExpiryTime
-//        displayExpiryTime = if (Instant.now().toEpochMilli() >= expiryTime) {
-//            expiryTime + 150 * 60 * 1000
-//        } else {
-//            expiryTime
-//        }
-//        return displayExpiryTime
     }
+
 
     /**
      * @return time difference from the current time to the next day cycle instance
      */
-    private suspend fun getTimeUntilDay(): Long {
-        return getNextExpiryTime() - Instant.now().toEpochMilli()
+    private fun getTimeUntilDay(): Long {
+       return getNextExpiryTime() - Instant.now().toEpochMilli()
     }
 
     /**
      * @return the time til the next event cycle, day/night
      */
-    suspend fun getTimeUntilNextEvent(): Long {
+    private fun getTimeUntilNextEvent(): Long {
         var dayTime = getTimeUntilDay()
         val nightTime = 50 * 60 * 1000
         // If the time left is greater than the night period
@@ -142,7 +144,7 @@ class Clock {
     /**
      * @return if its currently night
      */
-    suspend fun isNight(): Boolean {
+    fun isNight(): Boolean {
         if (!hasLoaded) return false
         var dayTime = getTimeUntilDay()
         var nightTime = 50 * 60 * 1000
@@ -155,7 +157,7 @@ class Clock {
     /**
      * @return when next event occurs as hours:minutes:seconds
      */
-    suspend fun getEventTime(): String {
+    fun getEventTime(): String {
         var eventTime = getTimeUntilNextEvent()
         return utcToHMS(eventTime)
     }
